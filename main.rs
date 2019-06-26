@@ -40,10 +40,10 @@ fn mod_exp(g: i32, n: i32, p: i32) -> i32 {
     return y;
 }
 
-// Algorithm 1.2.2 (Left-Right Binary) pg 9
+/// Algorithm 1.2.3 (Left-Right Binary; using bits) pg 9
 fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
-    let mut z;
-    let mut exp;
+    let z;
+    let exp;
 
     if n == 0 {
         return 1;
@@ -56,14 +56,12 @@ fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
     }
 
     let mut y = z;
-    let mut e = 1 << leftmost_bit(exp);
-    exp = exp - e;
+    let mut f = leftmost_bit(exp);
 
-    while e > 1 {
-        e = e / 2;
+    while f > 0 {
+        f -= 1;
         y = (y * y) % p;
-        if exp >= e {
-            exp = exp - e;
+        if exp&(1 << f) != 0 {
             y = (y * z) % p;
         }
     }
