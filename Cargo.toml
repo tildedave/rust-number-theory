@@ -1,0 +1,10 @@
+[package]
+name = "rust-finite-fields"
+version = "0.1.0"
+authors = ["Dave King <tildedave@gmail.com>"]
+
+[dependencies]
+
+[[bin]]
+name = "rust-finite-fields"
+path = "main.rs"
