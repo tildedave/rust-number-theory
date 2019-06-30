@@ -91,6 +91,57 @@ where T: Zero + Rem<Output=T> + Copy
     return gcd(b, a % b)
 }
 
+// Algorithm 1.3.5 (Binary GCD)
+// TODO: switch to use generics
+fn gcd_binary(a: i32, b: i32) -> i32 {
+    if a < b {
+        return gcd_binary(b, a);
+    }
+
+    let r = a % b;
+    let mut a = b;
+    let mut b = r;
+
+    if b == 0 {
+        return a;
+    }
+
+    let mut k = 0;
+    while a % 2 == 0 && b % 2 == 0 {
+        k += 1;
+        a = a >> 1;
+        b = b >> 1;
+    }
+
+    if a % 2 == 0 {
+        while a % 2 == 0 {
+            a = a >> 1;
+        }
+    } else {
+        while b % 2 == 0 {
+            b = b >> 1;
+        }
+    }
+
+    let mut t;
+    loop {
+        t = (a - b) >> 1;
+
+        if t == 0 {
+            return (1 << k) * a;
+        }
+        while t % 2 == 0 {
+            t = t >> 1;
+        }
+
+        if t > 0 {
+            a = t;
+        } else {
+            b = -t;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,5 +194,14 @@ mod tests {
         assert_eq!(3, gcd(6, 3));
         assert_eq!(2, gcd(6, 4));
         assert_eq!(1, gcd(6, 5));
+        assert_eq!(151, gcd(163231, 152057));
+    }
+
+    #[test]
+    fn test_gcd_binary() {
+        assert_eq!(3, gcd_binary(6, 3));
+        assert_eq!(2, gcd_binary(6, 4));
+        assert_eq!(1, gcd_binary(6, 5));
+        assert_eq!(151, gcd_binary(163231, 152057));
     }
 }
