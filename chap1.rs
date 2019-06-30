@@ -1,10 +1,20 @@
-fn leftmost_bit(g: i32) -> u32 {
-    let mut n = 0;
+extern crate num;
+
+use std::ops::Rem;
+use std::ops::Shr;
+use self::num::Zero;
+use self::num::One;
+
+fn leftmost_bit<T>(g: T) -> T
+where T: Shr<Output=T> + PartialEq + Zero + One
+{
+    let mut n = T::zero();
     let mut r = g;
-    while r != 0 {
-        r = r >> 1;
-        if r != 0 {
-            n = n + 1;
+
+    while r != T::zero() {
+        r = r >> T::one();
+        if r != T::zero() {
+            n = n + T::one();
         }
     }
     return n
@@ -69,6 +79,18 @@ fn mod_inverse(m: i32, p: i32) -> i32 {
     return mod_exp(m, p - 2, p);
 }
 
+// Algorithm 1.3.1 (Euclid GCD)
+// TODO: probably don't need the Copy constraint here
+fn gcd<T>(a: T, b: T) -> T
+where T: Zero + Rem<Output=T> + Copy
+{
+    if b.is_zero() {
+        return a
+    }
+
+    return gcd(b, a % b)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,5 +136,12 @@ mod tests {
                 assert_eq!(1, (mod_inverse(i, p) * i) % p);
             }
         }
+    }
+
+    #[test]
+    fn test_gcd_simple() {
+        assert_eq!(3, gcd(6, 3));
+        assert_eq!(2, gcd(6, 4));
+        assert_eq!(1, gcd(6, 5));
     }
 }
