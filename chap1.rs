@@ -1,7 +1,10 @@
 extern crate num;
 
+use std::ops::Div;
+use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
+use std::ops::Sub;
 use self::num::Zero;
 use self::num::One;
 
@@ -92,7 +95,7 @@ where T: Zero + Rem<Output=T> + Copy
 }
 
 // Algorithm 1.3.5 (Binary GCD)
-// TODO: switch to use generics
+// TODO: switch to use generics (sort of annoying because it uses even/odd a bunch)
 fn gcd_binary(a: i32, b: i32) -> i32 {
     if a < b {
         return gcd_binary(b, a);
@@ -139,6 +142,37 @@ fn gcd_binary(a: i32, b: i32) -> i32 {
         } else {
             b = -t;
         }
+    }
+}
+
+// Algorithm 1.3.6 (Euclid Extended)
+// Given a and b, algorithm determined u, v, d such that a*u + b*v = d
+fn gcd_extended<T>(a: T, b: T) -> (T, T, T)
+where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy
+{
+    let mut u = T::one();
+    let mut d = a;
+
+    if b.is_zero() {
+        return (u, T::zero(), d);
+    }
+
+    let mut v1 = T::zero();
+    let mut v3 = b;
+
+    loop {
+        if v3.is_zero() {
+            return (u, (d - a * u) / b, d);
+        }
+
+        let q = d / v3;
+        let t3 = d % v3;
+        let t1 = u - q * v1;
+
+        u = v1;
+        d = v3;
+        v1 = t1;
+        v3 = t3;
     }
 }
 
@@ -203,5 +237,12 @@ mod tests {
         assert_eq!(2, gcd_binary(6, 4));
         assert_eq!(1, gcd_binary(6, 5));
         assert_eq!(151, gcd_binary(163231, 152057));
+    }
+
+    #[test]
+    fn test_gcd_extended() {
+        let (u, v, d) = gcd_extended(163231, 152057);
+        assert_eq!(d, 151);
+        assert_eq!(163231 * u + 152057 * v, 151);
     }
 }
