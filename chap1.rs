@@ -176,6 +176,35 @@ where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output
     }
 }
 
+// 1.3.11 (Chinese Remainder Theorem)
+// Given pairwise coprime integers m_i and integers x_i find x such that x \equiv x_i mod m_i
+fn chinese_remainder_theorem<T>(m_list: Vec<T>, xi_list: Vec<T>) -> T
+// TODO: can I alias this type expression somehow?
+where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy {
+    assert!(m_list.len() == xi_list.len());
+    unsafe {
+        let k = m_list.len();
+
+        let mut i = 0;
+        let mut m = *m_list.get_unchecked(0);
+        let mut x = *xi_list.get_unchecked(0);
+
+        while i < k - 1 {
+            i = i + 1;
+
+            let mi = *m_list.get_unchecked(i);
+            let xi = *xi_list.get_unchecked(i);
+            let (u, v, _) = gcd_extended(m, mi);
+
+            x = u * m * xi + v * mi * x;
+            m = m * mi;
+            x = x % m;
+        }
+
+        return x;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -244,5 +273,11 @@ mod tests {
         let (u, v, d) = gcd_extended(163231, 152057);
         assert_eq!(d, 151);
         assert_eq!(163231 * u + 152057 * v, 151);
+    }
+
+    #[test]
+    fn test_chinese_remainder_theorem() {
+        assert_eq!(34, chinese_remainder_theorem( vec![3, 5, 7], vec![1, 4, 6]));
+        assert_eq!(-26, chinese_remainder_theorem( vec![5, 7], vec![4, 2]));
     }
 }
