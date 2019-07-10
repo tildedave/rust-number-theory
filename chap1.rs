@@ -23,6 +23,26 @@ where T: Shr<Output=T> + PartialEq + Zero + One
     return n
 }
 
+// Return the individual prime factors associated with a number
+fn prime_factor(n: i32) -> Vec<i32> {
+    let mut factors = Vec::new();
+    let mut x = n;
+
+    for i in 2..isqrt(x) + 1 {
+        while x % i == 0 {
+            factors.push(i);
+            x = x / i;
+        }
+    }
+
+    // remainder was prime
+    if x != 1 {
+        factors.push(x);
+    }
+
+    return factors;
+}
+
  // Algorithm 1.2.1 (Right-Left Binary) pg 8
 fn mod_exp(g: i32, n: i32, p: i32) -> i32 {
     let mut y = 1;
@@ -205,6 +225,78 @@ where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Outpu
     }
 }
 
+// 1.7. Integer Square Root
+fn isqrt(n: i32) -> i32 {
+    let mut x = n;
+    loop {
+        let y = (x + (n / x)) >> 1;
+        if y >= x {
+            return x;
+        }
+
+        x = y;
+    }
+}
+
+const kroneker_table: [i32; 8] = [0, 1, 0 , -1, 0, -1, 0, 1];
+
+// Algorithm 1.4.10 (Kronecker symbol) pg 29
+fn kroneker_symbol(a: i32, b: i32) -> i32 {
+    if b == 0 {
+        return if a.abs() == 1 { 1 } else { 0 };
+    }
+
+    if a % 2 == 0 && b % 2 == 0 {
+        return 0;
+    }
+
+    let mut v = 0;
+    let mut a = a;
+    let mut b = b;
+
+    while b % 2 == 0 {
+        v = v  + 1;
+        b = b / 2;
+    }
+
+    // a&7 = (-1)^((a^2 - 1)/8)
+    let mut k = if v % 2 == 0 { 1 } else { kroneker_table[(a&7) as usize] };
+    if b < 0 {
+        b = -b;
+        if a < 0 {
+            k = -k;
+        }
+    }
+
+    loop {
+        assert!(b % 2 != 0);
+        assert!(b > 0);
+
+        if a == 0 {
+            return if b > 1 { 0 } else { k };
+        }
+
+        v = 0;
+        while a % 2 == 0 {
+            v = v + 1;
+            a = a / 2;
+        }
+        if v % 2 == 1 {
+            k = kroneker_table[(b&7) as usize];
+        }
+
+        // reciprocity
+        // (-1)^((a - 1)(b - 1)/4)k
+        if a&b&2 != 0 {
+            k = -k;
+        }
+
+        let r = a.abs();
+        a = b % r;
+        b = r;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,5 +371,33 @@ mod tests {
     fn test_chinese_remainder() {
         assert_eq!(34, chinese_remainder(vec![3, 5, 7], vec![1, 4, 6]));
         assert_eq!(-26, chinese_remainder(vec![5, 7], vec![4, 2]));
+    }
+
+    #[test]
+    fn test_isqrt() {
+        assert_eq!(3, isqrt(9));
+        assert_eq!(3, isqrt(12));
+        assert_eq!(4, isqrt(16));
+        assert_eq!(5, isqrt(28));
+    }
+
+    #[test]
+    fn test_kronecker_symbol() {
+        assert_eq!(-1, kroneker_symbol(-1, 7));
+        assert_eq!(1, kroneker_symbol(-1, 13));
+        assert_eq!(-1, kroneker_symbol(2, 3));
+        assert_eq!(-1, kroneker_symbol(2, 5));
+        assert_eq!(-1, kroneker_symbol(2, 11));
+        assert_eq!(-1, kroneker_symbol(2, 13));
+        assert_eq!(1, kroneker_symbol(2, 7));
+        assert_eq!(1, kroneker_symbol(2, 17));
+        assert_eq!(1, kroneker_symbol(2, 23));
+    }
+
+    #[test]
+    fn test_prime_factors() {
+        assert_eq!(prime_factor(25), vec![5, 5]);
+        assert_eq!(prime_factor(13), vec![13]);
+        assert_eq!(prime_factor(540), vec![2, 2, 3, 3, 3, 5]);
     }
 }
