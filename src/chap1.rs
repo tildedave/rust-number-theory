@@ -119,9 +119,21 @@ where
     return gcd(b, a % b);
 }
 
+fn is_even<T>(x: T) -> bool
+where
+    T: Zero + One + Rem<Output = T> + PartialEq,
+{
+    x % (T::one() + T::one()) == T::zero()
+}
+
+fn is_odd<T>(x: T) -> bool where T : Zero + One + Rem<Output = T> + PartialEq {
+    !is_even(x)
+}
+
 // Algorithm 1.3.5 (Binary GCD)
-// TODO: switch to use generics (sort of annoying because it uses even/odd a bunch)
-fn gcd_binary(a: i32, b: i32) -> i32 {
+fn gcd_binary<T>(a: T, b: T) -> T
+where T: Zero + One + Rem<Output = T> + PartialEq + PartialOrd + Div<Output=T> + Sub<Output=T> + Mul<Output=T> + Copy {
+    let two = T::one() + T::one();
     if a < b {
         return gcd_binary(b, a);
     }
@@ -130,42 +142,47 @@ fn gcd_binary(a: i32, b: i32) -> i32 {
     let mut a = b;
     let mut b = r;
 
-    if b == 0 {
+    if b == T::zero() {
         return a;
     }
 
     let mut k = 0;
-    while a % 2 == 0 && b % 2 == 0 {
+    while is_even(a) && is_even(b) {
         k += 1;
-        a = a >> 1;
-        b = b >> 1;
+        a = a / two;
+        b = b / two;
     }
 
-    if a % 2 == 0 {
-        while a % 2 == 0 {
-            a = a >> 1;
+    if is_even(a) {
+        while is_even(a) {
+            a = a / two;
         }
     } else {
-        while b % 2 == 0 {
-            b = b >> 1;
+        while is_even(b) {
+            b = b / two;
         }
     }
 
     let mut t;
     loop {
-        t = (a - b) >> 1;
+        t = (a - b) / two;
 
-        if t == 0 {
-            return (1 << k) * a;
+        if t == T::zero() {
+            // (1 << k) * a
+            let mut result = T::one();
+            for _ in 0..k {
+                result = result * two;
+            }
+            return result * a;
         }
-        while t % 2 == 0 {
-            t = t >> 1;
+        while is_even(t) {
+            t = t / two;
         }
 
-        if t > 0 {
+        if t > T::zero() {
             a = t;
         } else {
-            b = -t;
+            b = T::zero() - t;
         }
     }
 }
@@ -250,7 +267,6 @@ where
         + std::cmp::PartialOrd
         + Copy,
 {
-    let mut i = 0;
     let (mut a, mut b) = lb;
     let (mut a_, mut b_) = ub;
     let mut res = Vec::new();
@@ -263,7 +279,7 @@ where
     loop {
         let r = a % b;
         q = a / b;
-        let mut r_ = a_ - b_ * q;
+        let r_ = a_ - b_ * q;
         if r_ < T::zero() || r_ >= b_ {
             // terminate
             q_ = a_ / b_;
@@ -355,13 +371,6 @@ fn isqrt(n: i32) -> i32 {
     }
 }
 
-fn is_even<T>(x: T) -> bool
-where
-    T: Zero + One + Rem<Output = T> + PartialEq,
-{
-    x % (T::one() + T::one()) == T::zero()
-}
-
 // Algorithm 1.4.10 (Kronecker symbol) pg 29
 fn kroneker_symbol<T>(a: T, b: T) -> i32
 where
@@ -373,7 +382,8 @@ where
         T::one() + T::one(),
         T::one() + T::one() + T::one(),
     );
-    let (four, five, six, seven) = (two + two, three + two, three + three, three + three + one);
+    let (four, five) = (two + two, three + two);
+    let (six, seven) = (three + three, three + four);
 
     let kroneker_table = |x| {
         if x == zero {
