@@ -201,28 +201,29 @@ where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output
 fn chinese_remainder<T>(m_list: Vec<T>, xi_list: Vec<T>) -> T
 // TODO: can I alias this type expression somehow?
 where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy {
-    assert!(m_list.len() == xi_list.len());
-    unsafe {
-        let k = m_list.len();
+    assert!(m_list.len() == xi_list.len(), "CRT lists were of difference size");
 
-        let mut i = 0;
-        let mut m = *m_list.get_unchecked(0);
-        let mut x = *xi_list.get_unchecked(0);
+    let mut joint_iter = m_list.iter().zip(xi_list.iter());
+    let mut m: T = T::zero();
+    let mut x: T = T::zero();
 
-        while i < k - 1 {
-            i = i + 1;
+    match joint_iter.next() {
+        Some((m_, x_)) => {
+            m = *m_;
+            x = *x_;
+        },
+        None => ()
+    };
 
-            let mi = *m_list.get_unchecked(i);
-            let xi = *xi_list.get_unchecked(i);
-            let (u, v, _) = gcd_extended(m, mi);
+    for (mi, xi) in joint_iter {
+        let (u, v, _) = gcd_extended(m, *mi);
 
-            x = u * m * xi + v * mi * x;
-            m = m * mi;
-            x = x % m;
-        }
-
-        return x;
+        x = u * m * *xi + v * *mi * x;
+        m = m * *mi;
+        x = x % m;
     }
+
+    return x;
 }
 
 // 1.7. Integer Square Root
