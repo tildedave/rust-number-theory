@@ -1,18 +1,19 @@
 extern crate num;
 
+use self::num::One;
+use self::num::Signed;
+use self::num::Zero;
+use std::cmp::PartialOrd;
+use std::ops::BitAnd;
 use std::ops::Div;
 use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
 use std::ops::Sub;
-use std::ops::BitAnd;
-use std::cmp::PartialOrd;
-use self::num::Zero;
-use self::num::One;
-use self::num::Signed;
 
 fn leftmost_bit<T>(g: T) -> T
-where T: Shr<Output=T> + PartialEq + Zero + One
+where
+    T: Shr<Output = T> + PartialEq + Zero + One,
 {
     let mut n = T::zero();
     let mut r = g;
@@ -23,7 +24,7 @@ where T: Shr<Output=T> + PartialEq + Zero + One
             n = n + T::one();
         }
     }
-    return n
+    return n;
 }
 
 // Return the individual prime factors associated with a number
@@ -46,7 +47,7 @@ fn prime_factor(n: i32) -> Vec<i32> {
     return factors;
 }
 
- // Algorithm 1.2.1 (Right-Left Binary) pg 8
+// Algorithm 1.2.1 (Right-Left Binary) pg 8
 fn mod_exp(g: i32, n: i32, p: i32) -> i32 {
     let mut y = 1;
     let mut z;
@@ -93,7 +94,7 @@ fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
     while f > 0 {
         f -= 1;
         y = (y * y) % p;
-        if exp&(1 << f) != 0 {
+        if exp & (1 << f) != 0 {
             y = (y * z) % p;
         }
     }
@@ -108,13 +109,14 @@ fn mod_inverse(m: i32, p: i32) -> i32 {
 // Algorithm 1.3.1 (Euclid GCD)
 // TODO: probably don't need the Copy constraint here
 fn gcd<T>(a: T, b: T) -> T
-where T: Zero + Rem<Output=T> + Copy
+where
+    T: Zero + Rem<Output = T> + Copy,
 {
     if b.is_zero() {
-        return a
+        return a;
     }
 
-    return gcd(b, a % b)
+    return gcd(b, a % b);
 }
 
 // Algorithm 1.3.5 (Binary GCD)
@@ -171,7 +173,8 @@ fn gcd_binary(a: i32, b: i32) -> i32 {
 // Algorithm 1.3.6 (Euclid Extended)
 // Given a and b, algorithm determined u, v, d such that a*u + b*v = d
 fn gcd_extended<T>(a: T, b: T) -> (T, T, T)
-where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy
+where
+    T: Zero + One + Div<Output = T> + Rem<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
 {
     let mut u = T::one();
     let mut d = a;
@@ -203,7 +206,9 @@ where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output
 // Given pairwise coprime integers m_i and integers x_i find x such that x \equiv x_i mod m_i
 fn chinese_remainder<T>(residues: Vec<(T, T)>) -> T
 // TODO: can I alias this type expression somehow?
-where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy {
+where
+    T: Zero + One + Div<Output = T> + Rem<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
+{
     let mut residue_iter: std::slice::Iter<'_, (T, T)> = residues.iter();
     let mut m: T = T::zero();
     let mut x: T = T::zero();
@@ -212,8 +217,8 @@ where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Outpu
         Some((x_, m_)) => {
             m = *m_;
             x = *x_;
-        },
-        None => ()
+        }
+        None => (),
     };
 
     for (xi, mi) in residue_iter {
@@ -235,7 +240,15 @@ struct Bound<T> {
 
 // 1.3.13 (Lehmer)
 fn continued_fraction<T>(lb: (T, T), ub: (T, T)) -> (Vec<T>, Bound<T>)
-where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + std::cmp::PartialOrd + Copy
+where
+    T: Zero
+        + One
+        + Div<Output = T>
+        + Rem<Output = T>
+        + Mul<Output = T>
+        + Sub<Output = T>
+        + std::cmp::PartialOrd
+        + Copy,
 {
     let mut i = 0;
     let (mut a, mut b) = lb;
@@ -244,7 +257,7 @@ where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Outpu
 
     let mut q_inf = false;
     let mut qup_inf = false;
-    let mut q : T;
+    let mut q: T;
     let mut q_ = T::zero();
 
     loop {
@@ -293,17 +306,37 @@ where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Outpu
     // bounded from both above and below
     match (q_inf, qup_inf) {
         (true, true) => panic!("Impossible"),
-        (true, false) => {
-            (res, Bound{lower: Some(q_), upper: None})
-        },
-        (false, true) => {
-            (res, Bound{lower: Some(q), upper: None})
-        },
+        (true, false) => (
+            res,
+            Bound {
+                lower: Some(q_),
+                upper: None,
+            },
+        ),
+        (false, true) => (
+            res,
+            Bound {
+                lower: Some(q),
+                upper: None,
+            },
+        ),
         (false, false) => {
             if q < q_ {
-                (res, Bound{lower: Some(q), upper: Some(q_)})
+                (
+                    res,
+                    Bound {
+                        lower: Some(q),
+                        upper: Some(q_),
+                    },
+                )
             } else {
-                (res, Bound{lower: Some(q_), upper: Some(q)})
+                (
+                    res,
+                    Bound {
+                        lower: Some(q_),
+                        upper: Some(q),
+                    },
+                )
             }
         }
     }
@@ -323,15 +356,23 @@ fn isqrt(n: i32) -> i32 {
 }
 
 fn is_even<T>(x: T) -> bool
-where T : Zero + One + Rem<Output=T> + PartialEq {
+where
+    T: Zero + One + Rem<Output = T> + PartialEq,
+{
     x % (T::one() + T::one()) == T::zero()
 }
 
 // Algorithm 1.4.10 (Kronecker symbol) pg 29
 fn kroneker_symbol<T>(a: T, b: T) -> i32
-where T : Zero + One + Signed + BitAnd<Output=T> + PartialOrd + Copy
+where
+    T: Zero + One + Signed + BitAnd<Output = T> + PartialOrd + Copy,
 {
-    let (zero, one, two, three) = (T::zero(), T::one(), T::one() + T::one(), T::one() + T::one() + T::one());
+    let (zero, one, two, three) = (
+        T::zero(),
+        T::one(),
+        T::one() + T::one(),
+        T::one() + T::one() + T::one(),
+    );
     let (four, five, six, seven) = (two + two, three + two, three + three, three + three + one);
 
     let kroneker_table = |x| {
@@ -349,7 +390,7 @@ where T : Zero + One + Signed + BitAnd<Output=T> + PartialOrd + Copy
             -1
         } else if x == six {
             0
-        } else if x ==seven {
+        } else if x == seven {
             1
         } else {
             panic!("impossible")
@@ -374,7 +415,11 @@ where T : Zero + One + Signed + BitAnd<Output=T> + PartialOrd + Copy
     }
 
     // a&7 = (-1)^((a^2 - 1)/8)
-    let mut k = if v % two == T::zero() { 1 } else { kroneker_table(a&seven) };
+    let mut k = if v % two == T::zero() {
+        1
+    } else {
+        kroneker_table(a & seven)
+    };
 
     if b < T::zero() {
         b = -b;
@@ -397,12 +442,12 @@ where T : Zero + One + Signed + BitAnd<Output=T> + PartialOrd + Copy
             a = a / two;
         }
         if !is_even(v) {
-            k = kroneker_table(b&seven);
+            k = kroneker_table(b & seven);
         }
 
         // reciprocity
         // (-1)^((a - 1)(b - 1)/4)k
-        if (a&b&two) != T::zero() {
+        if (a & b & two) != T::zero() {
             k = -k;
         }
 
@@ -484,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_chinese_remainder() {
-        assert_eq!(34, chinese_remainder(vec![(1, 3), (4, 5), (6,7)]));
+        assert_eq!(34, chinese_remainder(vec![(1, 3), (4, 5), (6, 7)]));
         assert_eq!(-26, chinese_remainder(vec![(4, 5), (2, 7)]));
     }
 
@@ -520,11 +565,24 @@ mod tests {
     #[test]
     fn test_real_approx() {
         // https://oeis.org/A001203
-        assert_eq!(continued_fraction(
-            (31415926535897932384626433_i128, 10000000000000000000000000_i128),
-            (31415926535897932384626434_i128, 10000000000000000000000000_i128)
-        ),
-        (vec![3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2, 2, 2, 1, 84, 2],
-            Bound{lower: Some(1), upper: Some(2)}));
+        assert_eq!(
+            continued_fraction(
+                (
+                    31415926535897932384626433_i128,
+                    10000000000000000000000000_i128
+                ),
+                (
+                    31415926535897932384626434_i128,
+                    10000000000000000000000000_i128
+                )
+            ),
+            (
+                vec![3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2, 2, 2, 1, 84, 2],
+                Bound {
+                    lower: Some(1),
+                    upper: Some(2)
+                }
+            )
+        );
     }
 }
