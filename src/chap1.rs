@@ -126,13 +126,26 @@ where
     x % (T::one() + T::one()) == T::zero()
 }
 
-fn is_odd<T>(x: T) -> bool where T : Zero + One + Rem<Output = T> + PartialEq {
+fn is_odd<T>(x: T) -> bool
+where
+    T: Zero + One + Rem<Output = T> + PartialEq,
+{
     !is_even(x)
 }
 
 // Algorithm 1.3.5 (Binary GCD)
 fn gcd_binary<T>(a: T, b: T) -> T
-where T: Zero + One + Rem<Output = T> + PartialEq + PartialOrd + Div<Output=T> + Sub<Output=T> + Mul<Output=T> + Copy {
+where
+    T: Zero
+        + One
+        + Rem<Output = T>
+        + PartialEq
+        + PartialOrd
+        + Div<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + Copy,
+{
     let two = T::one() + T::one();
     if a < b {
         return gcd_binary(b, a);
