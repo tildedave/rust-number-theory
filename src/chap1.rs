@@ -201,7 +201,7 @@ where T: Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output
 fn chinese_remainder<T>(residues: Vec<(T, T)>) -> T
 // TODO: can I alias this type expression somehow?
 where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + Copy {
-    let mut residue_iter = residues.iter();
+    let mut residue_iter: std::slice::Iter<'_, (T, T)> = residues.iter();
     let mut m: T = T::zero();
     let mut x: T = T::zero();
 
@@ -222,6 +222,89 @@ where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Outpu
     }
 
     return x;
+}
+
+#[derive(Debug, PartialEq)]
+struct Bound<T> {
+    lower: Option<T>,
+    upper: Option<T>,
+}
+
+// 1.3.13 (Lehmer)
+fn continued_fraction<T>(lb: (T, T), ub: (T, T)) -> (Vec<T>, Bound<T>)
+where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + std::cmp::PartialOrd + Copy
++ std::fmt::Debug
+{
+    let mut i = 0;
+    let (mut a, mut b) = lb;
+    let (mut a_, mut b_) = ub;
+    let mut res = Vec::new();
+
+    let mut q_inf = false;
+    let mut qup_inf = false;
+    let mut q : T;
+    let mut q_ = T::zero();
+
+    loop {
+        let r = a % b;
+        q = a / b;
+        let mut r_ = a_ - b_ * q;
+        if r_ < T::zero() || r_ >= b_ {
+            // terminate
+            q_ = a_ / b_;
+            break;
+        }
+
+        res.push(q);
+        a = b;
+        b = r;
+        a_ = b_;
+        b_ = r_;
+
+        match (b != T::zero(), b_ != T::zero()) {
+            (false, false) => {
+                // terminate the algo
+                break;
+            }
+            (true, true) => {
+                // return to step 2
+            }
+            (false, true) => {
+                // q = infinity
+                // q_ = a' / b'
+                q_ = a_ / b_;
+                q_inf = true;
+                break;
+            }
+            (true, false) => {
+                q_ = a / b;
+                qup_inf = true;
+                break;
+            }
+        }
+    }
+
+    // problem is that the bounds may be infinite; so we have three possibilities
+    // to express in our return value:
+    // bounded from above
+    // bounded from below
+    // bounded from both above and below
+    match (q_inf, qup_inf) {
+        (true, true) => panic!("Impossible"),
+        (true, false) => {
+            (res, Bound{lower: Some(q_), upper: None})
+        },
+        (false, true) => {
+            (res, Bound{lower: Some(q), upper: None})
+        },
+        (false, false) => {
+            if q < q_ {
+                (res, Bound{lower: Some(q), upper: Some(q_)})
+            } else {
+                (res, Bound{lower: Some(q_), upper: Some(q)})
+            }
+        }
+    }
 }
 
 // 1.7. Integer Square Root
@@ -399,5 +482,16 @@ mod tests {
         assert_eq!(prime_factor(25), vec![5, 5]);
         assert_eq!(prime_factor(13), vec![13]);
         assert_eq!(prime_factor(540), vec![2, 2, 3, 3, 3, 5]);
+    }
+
+    #[test]
+    fn test_real_approx() {
+        // https://oeis.org/A001203
+        assert_eq!(continued_fraction(
+            (31415926535897932384626433_i128, 10000000000000000000000000_i128),
+            (31415926535897932384626434_i128, 10000000000000000000000000_i128)
+        ),
+        (vec![3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2, 2, 2, 1, 84, 2],
+            Bound{lower: Some(1), upper: Some(2)}));
     }
 }
