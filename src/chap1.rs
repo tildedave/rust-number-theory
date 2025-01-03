@@ -5,8 +5,11 @@ use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
 use std::ops::Sub;
+use std::ops::BitAnd;
+use std::cmp::PartialOrd;
 use self::num::Zero;
 use self::num::One;
+use self::num::Signed;
 
 fn leftmost_bit<T>(g: T) -> T
 where T: Shr<Output=T> + PartialEq + Zero + One
@@ -233,7 +236,6 @@ struct Bound<T> {
 // 1.3.13 (Lehmer)
 fn continued_fraction<T>(lb: (T, T), ub: (T, T)) -> (Vec<T>, Bound<T>)
 where T : Zero + One + Div<Output=T> + Rem<Output=T> + Mul<Output=T> + Sub<Output=T> + std::cmp::PartialOrd + Copy
-+ std::fmt::Debug
 {
     let mut i = 0;
     let (mut a, mut b) = lb;
@@ -320,56 +322,87 @@ fn isqrt(n: i32) -> i32 {
     }
 }
 
-const kroneker_table: [i32; 8] = [0, 1, 0 , -1, 0, -1, 0, 1];
+fn is_even<T>(x: T) -> bool
+where T : Zero + One + Rem<Output=T> + PartialEq {
+    x % (T::one() + T::one()) == T::zero()
+}
 
 // Algorithm 1.4.10 (Kronecker symbol) pg 29
-fn kroneker_symbol(a: i32, b: i32) -> i32 {
-    if b == 0 {
-        return if a.abs() == 1 { 1 } else { 0 };
+fn kroneker_symbol<T>(a: T, b: T) -> i32
+where T : Zero + One + Signed + BitAnd<Output=T> + PartialOrd + Copy
+{
+    let (zero, one, two, three) = (T::zero(), T::one(), T::one() + T::one(), T::one() + T::one() + T::one());
+    let (four, five, six, seven) = (two + two, three + two, three + three, three + three + one);
+
+    let kroneker_table = |x| {
+        if x == zero {
+            0
+        } else if x == one {
+            1
+        } else if x == two {
+            0
+        } else if x == three {
+            -1
+        } else if x == four {
+            0
+        } else if x == five {
+            -1
+        } else if x == six {
+            0
+        } else if x ==seven {
+            1
+        } else {
+            panic!("impossible")
+        }
+    };
+
+    if b == T::zero() {
+        return if a.abs() == T::one() { 1 } else { 0 };
     }
 
-    if a % 2 == 0 && b % 2 == 0 {
+    if is_even(a) && is_even(b) {
         return 0;
     }
 
-    let mut v = 0;
+    let mut v = T::zero();
     let mut a = a;
     let mut b = b;
 
-    while b % 2 == 0 {
-        v = v  + 1;
-        b = b / 2;
+    while is_even(b) {
+        v = v + T::one();
+        b = b / two;
     }
 
     // a&7 = (-1)^((a^2 - 1)/8)
-    let mut k = if v % 2 == 0 { 1 } else { kroneker_table[(a&7) as usize] };
-    if b < 0 {
+    let mut k = if v % two == T::zero() { 1 } else { kroneker_table(a&seven) };
+
+    if b < T::zero() {
         b = -b;
-        if a < 0 {
+        if a < T::zero() {
             k = -k;
         }
     }
 
     loop {
-        assert!(b % 2 != 0);
-        assert!(b > 0);
+        assert!(b % two != T::zero());
+        assert!(b > T::zero());
 
-        if a == 0 {
-            return if b > 1 { 0 } else { k };
+        if a == T::zero() {
+            return if b > T::one() { 0 } else { k };
         }
 
-        v = 0;
-        while a % 2 == 0 {
-            v = v + 1;
-            a = a / 2;
+        v = T::zero();
+        while is_even(a) {
+            v = v + one;
+            a = a / two;
         }
-        if v % 2 == 1 {
-            k = kroneker_table[(b&7) as usize];
+        if !is_even(v) {
+            k = kroneker_table(b&seven);
         }
 
         // reciprocity
         // (-1)^((a - 1)(b - 1)/4)k
-        if a&b&2 != 0 {
+        if (a&b&two) != T::zero() {
             k = -k;
         }
 
