@@ -392,6 +392,7 @@ mod tests {
         assert_eq!(1, kroneker_symbol(2, 7));
         assert_eq!(1, kroneker_symbol(2, 17));
         assert_eq!(1, kroneker_symbol(2, 23));
+        assert_eq!(-1, kroneker_symbol(23, 59));
     }
 
     #[test]
