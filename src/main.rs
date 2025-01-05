@@ -1,4 +1,7 @@
 mod chap1;
+mod finite_field;
+mod poly;
+mod utils;
 
 fn main() {
     println!("Hello world!");

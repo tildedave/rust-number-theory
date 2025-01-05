@@ -2,6 +2,7 @@
 name = "rust-number-theory"
 version = "0.1.0"
 authors = ["Dave King <tildedave@gmail.com>"]
+edition = "2021"
 
 [dependencies]
 num = "0.2.0"

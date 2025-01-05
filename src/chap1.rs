@@ -7,6 +7,7 @@ use self::num::Zero;
 use self::rand::distributions::{Distribution, Standard};
 use self::rand::thread_rng;
 use self::rand::Rng;
+use crate::utils::{leftmost_bit, mod_positive};
 use std::cmp::PartialOrd;
 use std::fmt::Display;
 use std::ops::BitAnd;
@@ -17,56 +18,8 @@ use std::ops::Shl;
 use std::ops::Shr;
 use std::ops::Sub;
 
-fn leftmost_bit<T>(g: T) -> T
-where
-    T: Shr<Output = T> + PartialEq + Zero + One,
-{
-    let mut n = T::zero();
-    let mut r = g;
-
-    while r != T::zero() {
-        r = r >> T::one();
-        if r != T::zero() {
-            n = n + T::one();
-        }
-    }
-    return n;
-}
-
-fn mod_positive<T>(n: T, a: T) -> T
-where
-    T: Rem<Output = T> + Sub<Output = T> + PartialOrd + Signed + Copy,
-{
-    let m = n % a;
-    if m < T::zero() {
-        m + a
-    } else {
-        m
-    }
-}
-
-// Return the individual prime factors associated with a number
-fn prime_factor(n: i32) -> Vec<i32> {
-    let mut factors = Vec::new();
-    let mut x = n;
-
-    for i in 2..isqrt(x) + 1 {
-        while x % i == 0 {
-            factors.push(i);
-            x = x / i;
-        }
-    }
-
-    // remainder was prime
-    if x != 1 {
-        factors.push(x);
-    }
-
-    return factors;
-}
-
 // Algorithm 1.2.1 (Right-Left Binary) pg 8
-fn mod_exp<T>(g: T, n: T, p: T) -> T
+pub fn mod_exp<T>(g: T, n: T, p: T) -> T
 where
     T: Zero
         + One
@@ -74,7 +27,6 @@ where
         + Copy
         + PartialEq
         + PartialOrd
-        + std::ops::Neg<Output = T>
         + Rem<Output = T>
         + Mul<Output = T>
         + Div<Output = T>,
@@ -85,7 +37,7 @@ where
     if n == T::zero() {
         return y;
     } else if n < T::zero() {
-        exp = -n;
+        exp = T::zero() - n;
         z = mod_inverse(g, p);
     } else {
         exp = n;
@@ -104,14 +56,26 @@ where
 }
 
 /// Algorithm 1.2.3 (Left-Right Binary; using bits) pg 9
-fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
+pub fn mod_exp2<T>(g: T, n: T, p: T) -> T
+where
+    T: Zero
+        + One
+        + Sub<Output = T>
+        + Copy
+        + PartialOrd
+        + Rem<Output = T>
+        + Div<Output = T>
+        + Shr<Output = T>
+        + Shl<Output = T>
+        + BitAnd<Output = T>,
+{
     let z;
     let exp;
 
-    if n == 0 {
-        return 1;
-    } else if n < 0 {
-        exp = -n;
+    if n == T::zero() {
+        return T::one();
+    } else if n < T::zero() {
+        exp = T::zero() - n;
         z = mod_inverse(g, p);
     } else {
         exp = n;
@@ -121,10 +85,10 @@ fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
     let mut y = z;
     let mut f = leftmost_bit(exp);
 
-    while f > 0 {
-        f -= 1;
+    while f > T::zero() {
+        f = f - T::one();
         y = (y * y) % p;
-        if exp & (1 << f) != 0 {
+        if exp & (T::one() << f) != T::zero() {
             y = (y * z) % p;
         }
     }
@@ -132,7 +96,7 @@ fn mod_exp2(g: i32, n: i32, p: i32) -> i32 {
     return y;
 }
 
-fn mod_inverse<T>(m: T, p: T) -> T
+pub fn mod_inverse<T>(m: T, p: T) -> T
 where
     T: Zero
         + One
@@ -140,7 +104,6 @@ where
         + Copy
         + PartialEq
         + PartialOrd
-        + std::ops::Neg<Output = T>
         + Rem<Output = T>
         + Mul<Output = T>
         + Div<Output = T>,
@@ -414,7 +377,7 @@ where
 }
 
 // 1.7. Integer Square Root
-fn isqrt<T>(n: T) -> T
+pub fn isqrt<T>(n: T) -> T
 where
     T: Zero + One + Div<Output = T> + PartialOrd + Copy,
 {
@@ -787,13 +750,6 @@ mod tests {
                 .filter(|x| kronecker_symbol(*x, 23) == -1)
                 .collect::<Vec<i32>>()
         );
-    }
-
-    #[test]
-    fn test_prime_factors() {
-        assert_eq!(prime_factor(25), vec![5, 5]);
-        assert_eq!(prime_factor(13), vec![13]);
-        assert_eq!(prime_factor(540), vec![2, 2, 3, 3, 3, 5]);
     }
 
     #[test]
